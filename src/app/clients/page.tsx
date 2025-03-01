@@ -1,99 +1,67 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { PressRelease } from "./models/core";
-import { useApi } from "./http/api";
-import { eventEmitter } from "./utils/eventEmitter";
-import PRGenerationModal from "./components/GeneratePR";
-import Aside from "./components/Aside";
-import DeletePRModal from "./components/DeletePRModal";
 
-export default function Home() {
-  const [pressReleases, setPressReleases] = useState<PressRelease[]>([]);
-  const { createPressRelease, fetchPressReleases } = useApi();
+import { Suspense, useState } from "react";
 
-  const [processing, setProcessing] = useState(false);
-  const router = useRouter();
+import { useEffect } from "react";
+import { Client } from "../models/core";
+import { useApi } from "../http/api";
+import Aside from "../components/Aside";
+import NewClientModal from "../components/NewClientModal";
+import EditClientModal from "../components/EditClientModal";
+import DeleteClientModal from "../components/DeleteClientModal";
 
+export default function PageWithSuspense() {
+  return (
+    <Suspense fallback={<div></div>}>
+      <Clients />
+    </Suspense>
+  );
+}
+
+const Clients = () => {
+  const [clients, setClients] = useState<Client[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [totalPages, setTotalPages] = useState<number>(1);
-
-  const [selectedItem, setSelectedItem] = useState<PressRelease | null>(null);
-
+  const { fetchClients } = useApi();
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
-  const [userData, setUserData] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   
-  
+  const handleEditClick = (client: Client) => {
+    setSelectedClient(client);
+    setIsEditModalOpen(true);
+  };
 
-  const handleDeleteClick = (pr: PressRelease) => {
-    setSelectedItem(pr);
+  const handleEditSuccess = (updatedClient: Client) => {
+    // Update the clients list with the updated client
+    setClients(
+      clients.map((client) =>
+        client.id === updatedClient.id ? updatedClient : client
+      )
+    );
+  };
+
+  const handleDeleteClick = (client: Client) => {
+    setSelectedClient(client);
     setIsDeleteModalOpen(true);
   };
 
-  const handleDeleteSuccess = (deletedId: string) => {
+  const handleDeleteSuccess = (deletedClientId: string) => {
     // Remove the deleted client from the list
-    setPressReleases(pressReleases.filter((item) => item.id !== deletedId));
+    setClients(clients.filter(client => client.id !== deletedClientId));
   };
-
-  const openPressRelease = (press_release: PressRelease) => {
-    eventEmitter.emit("openAIModal", press_release);
-  };
-
-  const viewPR = (id: string) => {
-    const queryParams = new URLSearchParams({
-      id: id || "",
-    }).toString();
-    const url = `/editor?${queryParams}`;
-    router.push(url);
-  };
-
-  const addPressRelease = async () => {
-    setProcessing(true);
-    try {
-      const response = await createPressRelease({});
-      setProcessing(false);
-      toast.success("Press release created successfully");
-      openPressRelease(response);
-    } catch (error) {
-      setProcessing(false);
-      toast.error("Failed to create press release");
-    }
-  };
-
-  
-  
 
   useEffect(() => {
-
-
-    // Check if authentication data exists in localStorage
-    const accessToken = localStorage.getItem("accessToken");
-    const userData = localStorage.getItem("user");
-    setUserData(userData);
-    if (!accessToken || !userData) {
-      // If either token or user data is missing, redirect to login
-      router.push("/login");
-      return;
-    }
-
-    // Optional: You could also verify if the token is valid or expired
-    // by making a request to your backend
-
-    setIsLoading(false);
-
-    
-    const getData = async () => {
-      const data = await fetchPressReleases(currentPage, searchQuery);
+    const getClients = async () => {
+      const data = await fetchClients(currentPage, searchQuery);
       if (data) {
-        setPressReleases(data.results);
+        setClients(data.results);
         setTotalPages(Math.ceil(data.count / 10));
       }
     };
-    getData();
+    getClients();
   }, [currentPage, searchQuery]);
 
   return (
@@ -102,7 +70,7 @@ export default function Home() {
         <div className="w-1/5 h-full">
           <Aside />
         </div>
-        <PRGenerationModal />
+
         <div className="w-4/5 h-full p-2">
           <div className="bg-white h-full overflow-auto p-10 border border-gray-100 rounded-xl">
             <p className="text-lg text-gray-500">
@@ -115,7 +83,7 @@ export default function Home() {
                 } else {
                   return "Good evening,";
                 }
-              })()}{" "} 
+              })()}{" "}
               <span className="text-gray-800">Welcome back</span>
             </p>
 
@@ -128,29 +96,23 @@ export default function Home() {
                     viewBox="0 0 24 24"
                     fill="currentColor"
                   >
-                    <path d="M20 22H4C3.44772 22 3 21.5523 3 21V3C3 2.44772 3.44772 2 4 2H20C20.5523 2 21 2.44772 21 3V21C21 21.5523 20.5523 22 20 22ZM7 6V10H11V6H7ZM7 12V14H17V12H7ZM7 16V18H17V16H7ZM13 7V9H17V7H13Z"></path>
+                    <path d="M14 14.252V22H4C4 17.5817 7.58172 14 12 14C12.6906 14 13.3608 14.0875 14 14.252ZM12 13C8.685 13 6 10.315 6 7C6 3.685 8.685 1 12 1C15.315 1 18 3.685 18 7C18 10.315 15.315 13 12 13ZM18 17V14H20V17H23V19H20V22H18V19H15V17H18Z"></path>
                   </svg>
                 </span>
-                Press Releases
+                Clients
               </p>
               <div className="flex gap-2 items-center">
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   type="text"
-                  placeholder="Search by title"
+                  placeholder="Search by name, email, country"
                   className="py-2  placeholder:text-gray-400
-                    
-                    text-sm w-64 pl-4 focus:ring-0
-                     focus:outline-none text-gray-600 rounded-lg border border-gray-200"
+                
+                text-sm w-64 pl-4 focus:ring-0
+                 focus:outline-none text-gray-600 rounded-lg border border-gray-200"
                 />
-
-                <button
-                  onClick={addPressRelease}
-                  className="px-4 bg-violet-500 flex items-center justify-center text-white text-sm py-2 hover:bg-violet-600 transition-all duration-700 ease-in-out rounded-lg"
-                >
-                  New Press Release
-                </button>
+                <NewClientModal />
               </div>
             </div>
 
@@ -166,35 +128,52 @@ export default function Home() {
                         <th scope="col" className="px-6 font-normal py-3">
                           email
                         </th>
+                        <th scope="col" className="px-6 font-normal py-3">
+                          phone
+                        </th>
 
+                        <th scope="col" className="px-6 font-normal py-3">
+                          country
+                        </th>
                         <th scope="col" className="px-6 font-normal py-3">
                           action
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {pressReleases.map((item) => (
+                      {clients.map((client) => (
                         <tr
                           className="bg-white last:border-0
-                         text-gray-500 text-sm border-b
-                          border-slate-100"
+                     text-gray-500 text-sm border-b
+                      border-slate-100"
                         >
                           <th
                             scope="row"
                             className="px-6 py-3 flex items-center gap-2  font-normal"
                           >
-                            {item.title}
+                            {client.name}
                           </th>
                           <td className="px-6 py-4">
                             <div>
-                              <p className="">{item.client}</p>
+                              <p className="">{client.email}</p>
                             </div>
                           </td>
 
+                          <td className="px-6 truncate py-3">
+                            <p className="">{client.phone}</p>
+                          </td>
+
+                          <td className="px-6 py-3">{client.country}</td>
                           <td className="px-6 py-3">
                             <div className="flex gap-2">
+                              <EditClientModal
+                                client={selectedClient}
+                                isOpen={isEditModalOpen}
+                                onClose={() => setIsEditModalOpen(false)}
+                                onSuccess={handleEditSuccess}
+                              />
                               <button
-                                onClick={() => viewPR(item.id)}
+                                onClick={() => handleEditClick(client)}
                                 className="text-xs border border-slate-100 py-1 px-3 rounded-md flex gap-1 items-center "
                               >
                                 Edit
@@ -208,14 +187,14 @@ export default function Home() {
                                 </svg>
                               </button>
 
-                              <DeletePRModal
-                                pr={selectedItem}
+                              <DeleteClientModal
+                                client={selectedClient}
                                 isOpen={isDeleteModalOpen}
                                 onClose={() => setIsDeleteModalOpen(false)}
                                 onSuccess={handleDeleteSuccess}
                               />
                               <button
-                                onClick={() => handleDeleteClick(item)}
+                                onClick={() => handleDeleteClick(client)}
                                 className="text-xs border border-slate-100 py-1 px-3 rounded-md flex gap-1 items-center "
                               >
                                 Delete
@@ -247,8 +226,8 @@ export default function Home() {
               <div className="flex text-gray-500 text-sm gap-2">
                 <button
                   className="border border-violet-500 text-violet-500 px-3 py-1 rounded-lg 
-                    hover:bg-violet-500 transition-all duration-500 ease-out hover:text-white
-                    "
+                hover:bg-violet-500 transition-all duration-500 ease-out hover:text-white
+                "
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
@@ -259,8 +238,8 @@ export default function Home() {
 
                 <button
                   className="border border-violet-500 text-violet-500 px-3 py-1 rounded-lg 
-                    hover:bg-violet-500 transition-all duration-500 ease-out hover:text-white
-                    "
+                hover:bg-violet-500 transition-all duration-500 ease-out hover:text-white
+                "
                   onClick={() =>
                     setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                   }
@@ -275,4 +254,4 @@ export default function Home() {
       </div>
     </div>
   );
-}
+};
