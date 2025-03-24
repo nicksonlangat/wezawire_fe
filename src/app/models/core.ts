@@ -6,19 +6,10 @@ export interface Client{
     country: string;
     website: string;
     description: string;
+    logo: string;
+    about: string;
 
 }
-
-export interface Journalist{
-    id: string;
-    email: string;
-    name: string;
-    phone: string;
-    country: string;
-    title: string;
-    media_house: string;
-}
-
 
 export interface PressRelease {
     id: string;

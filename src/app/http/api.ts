@@ -65,12 +65,20 @@ export const useApi = () => {
 
   
     const addClient = async (data: object) => {
-      const response = await axiosInstance.post(`clients/`, data);
+      const response = await axiosInstance.post(`clients/`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     };
 
     const updateClient = async (id: string, data: object) => {
-      const response = await axiosInstance.patch(`clients/${id}/`, data);
+      const response = await axiosInstance.patch(`clients/${id}/`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     };
 
@@ -80,7 +88,11 @@ export const useApi = () => {
     };
 
   const generatePressRelease = async (data: object) => {
-    const response = await axiosInstance.post(`generate-press-release/`, data);
+    const response = await axiosInstance.post(`generate-press-release/`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   };
 

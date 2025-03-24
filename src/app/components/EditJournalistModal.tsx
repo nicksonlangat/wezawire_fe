@@ -258,7 +258,7 @@ export default function EditJournalistModal({
                     <Spinner className="mr-2" /> Updating...
                   </>
                 ) : (
-                  "Update Client"
+                  "Update Journalist"
                 )}
               </button>
             </div>

@@ -8,7 +8,8 @@ export default function NewClientModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const { addClient } = useApi();
-  
+  const [file, setFile] = useState<File | null>(null);
+
   // Form state
   const [clientData, setClientData] = useState({
     name: "",
@@ -16,7 +17,8 @@ export default function NewClientModal() {
     phone: "",
     country: "",
     website: "",
-    description: ""
+    description: "",
+    about: "",
   });
 
   // Countries list
@@ -40,26 +42,55 @@ export default function NewClientModal() {
     setIsOpen(true);
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value } = e.target;
     setClientData({
       ...clientData,
-      [name]: value
+      [name]: value,
     });
   };
 
   const handleSubmit = async () => {
     setProcessing(true);
-    try {
-      const response = await addClient(clientData);
-      setProcessing(false);
-      resetForm();
-      close();
-      toast.success("Client added successfully!");
-    } catch (error) {
-      setProcessing(false);
-      close();
-      toast.error("Failed to add client.");
+
+    if (file) {
+      const formData = new FormData();
+      formData.append("logo", file);
+      formData.append("name", clientData.name);
+      formData.append("email", clientData.email);
+      formData.append("phone", clientData.phone);
+      formData.append("country", clientData.country);
+      formData.append("website", clientData.website);
+      formData.append("description", clientData.description);
+      formData.append("about", clientData.about);
+
+      try {
+        const response = await addClient(formData);
+        setProcessing(false);
+        // resetForm();
+        close();
+        toast.success("Client added successfully!");
+      } catch (error) {
+        setProcessing(false);
+        close();
+        toast.error("Failed to add client.");
+      }
+    } else {
+      try {
+        const response = await addClient(clientData);
+        setProcessing(false);
+        resetForm();
+        close();
+        toast.success("Client added successfully!");
+      } catch (error) {
+        setProcessing(false);
+        close();
+        toast.error("Failed to add client.");
+      }
     }
   };
 
@@ -70,16 +101,20 @@ export default function NewClientModal() {
       phone: "",
       country: "",
       website: "",
-      description: ""
+      description: "",
+      about: "",
     });
   };
 
   return (
     <>
-      <button onClick={open} className="px-4 bg-violet-500 flex items-center justify-center text-white text-sm py-2 hover:bg-violet-600 transition-all duration-700 ease-in-out rounded-lg">
+      <button
+        onClick={open}
+        className="px-4 bg-violet-500 flex items-center justify-center text-white text-sm py-2 hover:bg-violet-600 transition-all duration-700 ease-in-out rounded-lg"
+      >
         Add New Client
       </button>
-      
+
       <Dialog
         open={isOpen}
         as="div"
@@ -90,10 +125,12 @@ export default function NewClientModal() {
           <div className="flex min-h-full items-center justify-center p-4">
             <DialogPanel
               transition
-              className="w-full text-slate-500 text-sm max-w-md rounded-lg bg-white p-6 backdrop-blur-2xl duration-300 ease-out data-[closed]:transform-[scale(95%)] data-[closed]:opacity-0"
+              className="w-full text-slate-500 text-sm max-w-lg rounded-lg bg-white p-6 backdrop-blur-2xl duration-300 ease-out data-[closed]:transform-[scale(95%)] data-[closed]:opacity-0"
             >
               <div className="flex justify-between items-center mb-4">
-                <p className="text-lg font-medium text-slate-700">Add New Client</p>
+                <p className="text-lg font-medium text-slate-700">
+                  Add New Client
+                </p>
                 <button
                   onClick={close}
                   className="text-xs size-8 hover:bg-slate-100 rounded-md flex items-center justify-center hover:text-slate-800 transition-all duration-500 ease-in-out text-slate-400"
@@ -108,89 +145,143 @@ export default function NewClientModal() {
                   </svg>
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 {/* Name Field */}
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-slate-600 mb-1">Name</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={clientData.name}
-                    onChange={handleInputChange}
-                    className="w-full p-2 bg-slate-50 border
-                     border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
-                    placeholder="Enter client name"
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label
+                      htmlFor="edit-name"
+                      className="block text-sm font-medium text-slate-600 mb-1"
+                    >
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      id="edit-name"
+                      name="name"
+                      value={clientData.name}
+                      onChange={handleInputChange}
+                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      placeholder="Enter client name"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="edit-email"
+                      className="block text-sm font-medium text-slate-600 mb-1"
+                    >
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="edit-email"
+                      name="email"
+                      value={clientData.email}
+                      onChange={handleInputChange}
+                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="edit-phone"
+                      className="block text-sm font-medium text-slate-600 mb-1"
+                    >
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      id="edit-phone"
+                      name="phone"
+                      value={clientData.phone}
+                      onChange={handleInputChange}
+                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="edit-country"
+                      className="block text-sm font-medium text-slate-600 mb-1"
+                    >
+                      Country
+                    </label>
+                    <select
+                      id="edit-country"
+                      name="country"
+                      value={clientData.country}
+                      onChange={handleInputChange}
+                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
+                    >
+                      <option value="">Select a country</option>
+                      {countries.map((country) => (
+                        <option key={country} value={country}>
+                          {country}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex text-base-100 text-sm flex-col">
+                    <label
+                      htmlFor="logo"
+                      className="block text-sm font-medium text-slate-600 mb-1"
+                    >
+                      Logo Image
+                    </label>
+                    <input
+                      type="file"
+                      id="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        setFile(e.target.files ? e.target.files[0] : null)
+                      }
+                      className="
+                          border border-slate-200 file:mr-4 file:py-1.5 file:px-2 file:rounded-full file:border-0 bg-slate-50
+                          file:text-sm file:bg-violet-500 file:text-white
+                          hover:file:bg-primary/90 cursor-pointer
+                          pl-4 py-1 rounded-lg focus:ring-0 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="edit-website"
+                      className="block text-sm font-medium text-slate-600 mb-1"
+                    >
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      id="edit-website"
+                      name="website"
+                      value={clientData.website}
+                      onChange={handleInputChange}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      placeholder="Enter website URL"
+                    />
+                  </div>
                 </div>
-                
+
                 {/* Email Field */}
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-600 mb-1">Email</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={clientData.email}
-                    onChange={handleInputChange}
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
-                    placeholder="Enter email address"
-                  />
-                </div>
-                
+
                 {/* Phone Field */}
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-slate-600 mb-1">Phone Number</label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={clientData.phone}
-                    onChange={handleInputChange}
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
-                    placeholder="Enter phone number"
-                  />
-                </div>
-                
+
                 {/* Country Field */}
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-slate-600 mb-1">Country</label>
-                  <select
-                    id="country"
-                    name="country"
-                    value={clientData.country}
-                    onChange={handleInputChange}
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
-                  >
-                    <option value="">Select a country</option>
-                    {countries.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
+
                 {/* Website Field */}
-                <div>
-                  <label htmlFor="website" className="block text-sm font-medium text-slate-600 mb-1">Website</label>
-                  <input
-                    type="url"
-                    id="website"
-                    name="website"
-                    value={clientData.website}
-                    onChange={handleInputChange}
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-500"
-                    placeholder="Enter website URL"
-                  />
-                </div>
-                
+
                 {/* Description Field */}
                 <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-slate-600 mb-1">Description</label>
+                  <label
+                    htmlFor="edit-description"
+                    className="block text-sm font-medium text-slate-600 mb-1"
+                  >
+                    Description
+                  </label>
                   <textarea
-                    id="description"
+                    id="edit-description"
                     name="description"
                     value={clientData.description}
                     onChange={handleInputChange}
@@ -199,8 +290,27 @@ export default function NewClientModal() {
                     placeholder="Enter client description"
                   ></textarea>
                 </div>
+
+                {/* Description Field */}
+                <div>
+                  <label
+                    htmlFor="edit-about"
+                    className="block text-sm font-medium text-slate-600 mb-1"
+                  >
+                    About
+                  </label>
+                  <textarea
+                    id="edit-about"
+                    name="about"
+                    value={clientData.about}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-violet-500"
+                    placeholder="Enter client about"
+                  ></textarea>
+                </div>
               </div>
-              
+
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={close}

@@ -8,13 +8,21 @@ import Tiptap from "./TipTap";
 import Spinner from "./Spinner";
 import { toast } from "sonner";
 
+// Define a Partner interface
+interface Partner {
+  id: string;
+  name: string;
+  image: File | null;
+}
+
 export default function PRGenerationModal() {
   let [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [partner, setPartner] = useState("");
+  const [partners, setPartners] = useState<Partner[]>([{ id: crypto.randomUUID(), name: "", image: null }]);
   const [client, setClient] = useState("");
   const [clients, setClients] = useState<Client[]>([]);
   const router = useRouter();
+  const [file, setFile] = useState<File | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [totalPages, setTotalPages] = useState<number>(1);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -38,7 +46,7 @@ export default function PRGenerationModal() {
     setIsOpen(false);
   }
 
-  const fetchAllClients = async () => { 
+  const fetchAllClients = async () => {
     try {
       const response = await fetchClients(currentPage, searchQuery);
       setClients(response.results);
@@ -49,16 +57,58 @@ export default function PRGenerationModal() {
     }
   };
 
+  // Handle adding a new partner
+  const addPartner = () => {
+    setPartners([...partners, { id: crypto.randomUUID(), name: "", image: null }]);
+  };
+
+  // Handle removing a partner
+  const removePartner = (partnerId: string) => {
+    if (partners.length > 1) {
+      setPartners(partners.filter(partner => partner.id !== partnerId));
+    } else {
+      toast.error("You need at least one partner");
+    }
+  };
+
+  // Handle partner name change
+  const handlePartnerNameChange = (partnerId: string, newName: string) => {
+    setPartners(partners.map(partner => 
+      partner.id === partnerId ? { ...partner, name: newName } : partner
+    ));
+  };
+
+  // Handle partner image change
+  const handlePartnerImageChange = (partnerId: string, newImage: File | null) => {
+    setPartners(partners.map(partner => 
+      partner.id === partnerId ? { ...partner, image: newImage } : partner
+    ));
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
+
+    const formData = new FormData();
+    
+    if (file) {
+      formData.append("file", file);
+    }
+    
+    formData.append("prompt", prompt);
+    formData.append("id", pressData?.id || "");
+    formData.append("client", client);
+    formData.append("country", country);
+    
+    // Add partners data to formData
+    partners.forEach((partner, index) => {
+      formData.append(`partners[${index}][name]`, partner.name);
+      if (partner.image) {
+        formData.append(`partners[${index}][image]`, partner.image);
+      }
+    });
+
     try {
-      const response = await generatePressRelease({
-        id: pressData?.id,
-        prompt: prompt,
-        client: client,
-        partner: partner,
-        country: country,
-      });
+      const response = await generatePressRelease(formData);
       setLoading(false);
       setPressData(response);
       eventEmitter.emit("saveContent");
@@ -103,10 +153,10 @@ export default function PRGenerationModal() {
           <div className="flex min-h-full items-center justify-center">
             <DialogPanel
               transition
-              className="w-full text-slate-500 text-sm max-w-5xl rounded-xl  bg-transparent backdrop-blur-2xl duration-300 ease-out data-[closed]:transform-[scale(95%)] data-[closed]:opacity-0"
+              className="w-full text-slate-500 text-sm max-w-5xl rounded-xl bg-transparent backdrop-blur-2xl duration-300 ease-out data-[closed]:transform-[scale(95%)] data-[closed]:opacity-0"
             >
               <div className="flex gap-2">
-                <div className=" bg-white rounded-xl w-3/4 p-4">
+                <div className="bg-white rounded-xl w-3/4 p-4">
                   <div className="flex text-xl text-slate-700 justify-between items-center">
                     <p>Press Release</p>
 
@@ -116,12 +166,11 @@ export default function PRGenerationModal() {
                       }}
                       className="text-violet-600 text-lg hover:text-violet-700 transition-all duration-500 ease-in-out"
                     >
-                      
                       View in editor
                     </button>
                   </div>
 
-                  <div className=" overflow-auto h-[40em] mt-5 bg-[#f8f8f8]  rounded-lg p-2">
+                  <div className="overflow-auto h-[40em] mt-5 bg-[#f8f8f8] rounded-lg p-2">
                     <div className="bg-white p-5 rounded-lg">
                       <Tiptap
                         content={pressData?.content!}
@@ -132,9 +181,9 @@ export default function PRGenerationModal() {
                   </div>
                 </div>
 
-                <div className="w-1/2 bg-white rounded-xl p-4">
+                <div className="w-1/2 bg-white rounded-xl p-4 overflow-y-auto max-h-[45em]">
                   <div className="flex justify-between">
-                    <h1 className="bg-gradient-to-r text-xl font-semibold flex gap-2 items-center from-blue-600 via-pink-500 to-indigo-400  text-transparent bg-clip-text">
+                    <h1 className="bg-gradient-to-r text-xl font-semibold flex gap-2 items-center from-blue-600 via-pink-500 to-indigo-400 text-transparent bg-clip-text">
                       <svg
                         viewBox="0 0 576 512"
                         fill="currentColor"
@@ -165,7 +214,7 @@ export default function PRGenerationModal() {
                       onChange={(e) => setPrompt(e.target.value)}
                       className="bg-[#f8f8f8] placeholder:text-gray-400
                       text-gray-500 py-2 focus:ring-0 focus:outline-none
-                       focus:border-gray-200 mt-2 border border-gray-200 p-3  rounded-lg resize-none w-full"
+                       focus:border-gray-200 mt-2 border border-gray-200 p-3 rounded-lg resize-none w-full"
                     ></textarea>
 
                     <div className="p-2 text-xs border border-blue-300 text-blue-500 bg-blue-50 rounded-lg mt-2">
@@ -187,8 +236,8 @@ export default function PRGenerationModal() {
                           onChange={(e) => setClient(e.target.value)}
                           className="bg-[#f8f8f8] placeholder:text-gray-400
                           text-gray-500 py-2 focus:ring-0 focus:outline-none
-                           focus:border-gray-200 mt-2 border border-gray-200 p-3  rounded-lg resize-none w-full"
-                       >
+                           focus:border-gray-200 mt-2 border border-gray-200 p-3 rounded-lg resize-none w-full"
+                        >
                           {clients.map((client) => (
                             <option key={client.id} value={client.name}>
                               {client.name}
@@ -196,20 +245,77 @@ export default function PRGenerationModal() {
                           ))}
                         </select>
                       </div>
+                      
+                      {/* Partner Entities Section */}
                       <div className="flex w-full flex-col">
-                        <label htmlFor="" className="text-gray-500">
-                          Partner Entity
-                        </label>
-
-                        <input
-                          id="partner"
-                          value={partner}
-                          onChange={(e) => setPartner(e.target.value)}
-                          placeholder="Enter Patner Entity (Optional)"
-                          className="bg-[#f8f8f8] placeholder:text-gray-400
-                          text-gray-500 py-2 focus:ring-0 focus:outline-none
-                           focus:border-gray-200 mt-2 border border-gray-200 p-3  rounded-lg resize-none w-full"
-                      />
+                        <div className="flex items-center justify-between">
+                          <label htmlFor="" className="text-gray-500">
+                            Partner Entities
+                          </label>
+                          <button 
+                            onClick={addPartner}
+                            className="text-violet-600 text-xs hover:text-violet-700 transition-all duration-500 ease-in-out flex items-center gap-1"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <line x1="12" y1="8" x2="12" y2="16"></line>
+                              <line x1="8" y1="12" x2="16" y2="12"></line>
+                            </svg>
+                            Add Partner
+                          </button>
+                        </div>
+                        
+                        {partners.map((partner, index) => (
+                          <div key={partner.id} className="mt-2 p-3 border border-gray-200 rounded-lg bg-[#f8f8f8]">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-xs font-medium text-gray-500">Partner {index + 1}</span>
+                              {partners.length > 1 && (
+                                <button 
+                                  onClick={() => removePartner(partner.id)}
+                                  className="text-red-500 text-xs hover:text-red-600"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                            
+                            <input
+                              value={partner.name}
+                              onChange={(e) => handlePartnerNameChange(partner.id, e.target.value)}
+                              placeholder="Partner name"
+                              className="bg-white placeholder:text-gray-400
+                              text-gray-500 py-2 focus:ring-0 focus:outline-none
+                              focus:border-gray-200 border border-gray-200 p-2 rounded-lg w-full mb-2"
+                            />
+                            
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => 
+                                  handlePartnerImageChange(partner.id, e.target.files ? e.target.files[0] : null)
+                                }
+                                className="
+                                border border-gray-200 w-full file:mr-4 file:py-1 file:px-2 file:rounded-full file:border-0 bg-white
+                                file:text-xs file:bg-violet-500 file:text-white
+                                hover:file:bg-primary/90 cursor-pointer
+                                pl-2 py-1 rounded-lg focus:ring-0 focus:outline-none text-xs"
+                              />
+                              {partner.image && (
+                                <div className="text-xs text-green-500 flex items-center gap-1">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                  </svg>
+                                  Uploaded
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
 
                       <div className="flex w-full flex-col">
@@ -222,7 +328,7 @@ export default function PRGenerationModal() {
                           onChange={(e) => setCountry(e.target.value)}
                           className="bg-[#f8f8f8] placeholder:text-gray-400
                            text-gray-500 py-2 focus:ring-0 focus:outline-none
-                            focus:border-gray-200 mt-2 border border-gray-200 p-3  rounded-lg resize-none w-full"
+                            focus:border-gray-200 mt-2 border border-gray-200 p-3 rounded-lg resize-none w-full"
                         >
                           {countries.map((item) => (
                             <option key={item} value={item}>
@@ -231,16 +337,33 @@ export default function PRGenerationModal() {
                           ))}
                         </select>
                       </div>
+                      <div className="flex w-full text-base-100 text-sm flex-col">
+                        <label htmlFor="logo" className="text-gray-500 mb-1">
+                          Template Sample
+                        </label>
+                        <input
+                          type="file"
+                          id="file"
+                          onChange={(e) =>
+                            setFile(e.target.files ? e.target.files[0] : null)
+                          }
+                          className="
+                          border border-gray-200 w-full file:mr-4 file:py-1.5 file:px-2 file:rounded-full file:border-0 bg-[#f8f8f8]
+                          file:text-sm file:bg-violet-500 file:text-white
+                          hover:file:bg-primary/90 cursor-pointer
+                          pl-4 py-1 rounded-lg focus:ring-0 focus:outline-none"
+                        />
+                      </div>
                     </div>
-                    <div className="flex ">
+                    <div className="flex">
                       <button
                         onClick={handleSubmit}
-                        className="text-sm mt-2 w-full flex gap-2  items-center justify-center
-                         bg-violet-600 hover:bg-violet-700 transition-all duration-700 ease-in-out px-4 rounded-lg py-2  text-white"
+                        className="text-sm mt-2 w-full flex gap-2 items-center justify-center
+                         bg-violet-600 hover:bg-violet-700 transition-all duration-700 ease-in-out px-4 rounded-lg py-2 text-white"
                       >
                         {loading ? (
                           <>
-                            <Spinner className=" text-violet-600" /> Generating
+                            <Spinner className="text-violet-600" /> Generating
                             Press Release...
                           </>
                         ) : (
