@@ -4,7 +4,7 @@ import { getPublishedLinks, getPressReleaseStats } from '../../../services/api';
 
 const PressReleaseStats: React.FC = () => {
   const [pressReleases, setPressReleases] = useState<PressRelease[]>([]);
-  const [selectedPressReleaseId, setSelectedPressReleaseId] = useState<number | null>(null);
+  const [selectedPressReleaseId, setSelectedPressReleaseId] = useState<string | null>(null);
   const [stats, setStats] = useState<PressReleaseStatsType | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -18,7 +18,7 @@ const PressReleaseStats: React.FC = () => {
         // Extract unique press releases from the links
         const uniquePressReleases = Array.from(
           new Map(
-            data.map(link => [
+            data.map((link: any) => [
               link.press_release, 
               { 
                 id: link.press_release, 
@@ -98,7 +98,7 @@ const PressReleaseStats: React.FC = () => {
         <select
           className="w-full border border-gray-300 rounded p-2"
           value={selectedPressReleaseId || ''}
-          onChange={(e) => setSelectedPressReleaseId(Number(e.target.value) || null)}
+          onChange={(e) => setSelectedPressReleaseId(e.target.value || null)}
         >
           <option value="">-- Select a press release --</option>
           {pressReleases.map((pr) => (
