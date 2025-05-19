@@ -149,13 +149,30 @@ export const useApi = () => {
     const response = await axiosInstance.post(`distribute-press-release/`, data);
     return response.data;
   };
-  
+
+
+
+  const fetchEmailStats = async (timeframe = "7days", campaignId = "all") => {
+    try {
+      const response = await axiosInstance.get(`email-stats/`, {
+        params: { timeframe, campaign_id: campaignId },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching email stats:", error);
+      throw error;
+    }
+  };
+
+
 
   return {
     // accounts
     createUser,
     loginUser,
     getUser,
+
+    fetchEmailStats,
 
     // clients and journalists
     fetchJournalists,

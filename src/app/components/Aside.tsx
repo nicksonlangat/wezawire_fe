@@ -6,12 +6,14 @@ import { eventEmitter } from "../utils/eventEmitter";
 import { toast } from "sonner";
 import Spinner from "./Spinner";
 import { usePathname, useRouter } from "next/navigation";
+import TemplateSelectorModal from "./TemplateSelectorModal";
 
 export default function Aside() {
   const { createPressRelease } = useApi();
   const [processing, setProcessing] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  
   const openPressRelease = (press_release: PressRelease) => {
     eventEmitter.emit("openAIModal", press_release);
   };
@@ -27,6 +29,10 @@ export default function Aside() {
       setProcessing(false);
       toast.error("Failed to create press release");
     }
+  };
+
+  const openTemplateSelector = () => {
+    eventEmitter.emit("openTemplateSelector");
   };
 
   const isActivePath = (path: string) => {
@@ -80,10 +86,25 @@ export default function Aside() {
         </svg>
       ),
     },
+    {
+      name: "Templates",
+      path: "/templates",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="size-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 2V22H4V18H2V16H4V13H2V11H4V8H2V6H4V2H8ZM20.0049 2C21.1068 2 22 2.89821 22 3.9908V20.0092C22 21.1087 21.1074 22 20.0049 22H10V2H20.0049Z"></path></svg>
+      ),
+    },
+    {
+      name: "Email Stats",
+      path: "/email-stats",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="size-5" viewBox="0 0 24 24" fill="currentColor"><path d="M22 13.3414C21.3744 13.1203 20.7013 13 20 13C16.6863 13 14 15.6863 14 19C14 19.7013 14.1203 20.3744 14.3414 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H21C21.5523 3 22 3.44772 22 4V13.3414ZM12.0606 11.6829L5.64722 6.2377L4.35278 7.7623L12.0731 14.3171L19.6544 7.75616L18.3456 6.24384L12.0606 11.6829ZM17.05 19.5485C17.0172 19.3706 17 19.1873 17 19C17 18.8127 17.0172 18.6294 17.05 18.4515L16.0359 17.866L17.0359 16.134L18.0505 16.7197C18.3278 16.4824 18.6489 16.2948 19 16.1707V15H21V16.1707C21.3511 16.2948 21.6722 16.4824 21.9495 16.7197L22.9641 16.134L23.9641 17.866L22.95 18.4515C22.9828 18.6294 23 18.8127 23 19C23 19.1873 22.9828 19.3706 22.95 19.5485L23.9641 20.134L22.9641 21.866L21.9495 21.2803C21.6722 21.5176 21.3511 21.7052 21 21.8293V23H19V21.8293C18.6489 21.7052 18.3278 21.5176 18.0505 21.2803L17.0359 21.866L16.0359 20.134L17.05 19.5485ZM20 20C20.5523 20 21 19.5523 21 19C21 18.4477 20.5523 18 20 18C19.4477 18 19 18.4477 19 19C19 19.5523 19.4477 20 20 20Z"></path></svg>
+      ),
+    },
   ];
 
   return (
     <div className="h-full">
+      <TemplateSelectorModal/>
       <div className="p-5 flex flex-col justify-between h-full">
         <div>
           <div className="flex gap-1 text-gray-800 text-2xl items-center">
@@ -97,19 +118,34 @@ export default function Aside() {
             </svg>
             <p>Wezawire</p>
           </div>
-          <button
-            onClick={addPressRelease}
-            className="mt-10 bg-violet-500 flex items-center justify-center
-             text-white text-sm py-2 hover:bg-violet-600 transition-all duration-700 ease-in-out w-full rounded-md"
-          >
-            {processing ? (
-              <>
-                <Spinner className="text-violet-600" /> Generating
-              </>
-            ) : (
-              <> New Press Release</>
-            )}
-          </button>
+          
+          <div className="mt-10 flex gap-2">
+            <button
+              onClick={addPressRelease}
+              className="bg-violet-500 flex-1 flex items-center justify-center
+               text-white text-sm py-2 hover:bg-violet-600 transition-all duration-700 ease-in-out rounded-md"
+            >
+              {processing ? (
+                <>
+                  <Spinner className="text-white" /> Generating
+                </>
+              ) : (
+                <>New</>
+              )}
+            </button>
+            
+            <button
+              onClick={openTemplateSelector}
+              className="bg-violet-100 text-violet-600 flex-1 flex items-center justify-center
+               text-sm py-2 hover:bg-violet-200 transition-all duration-700 ease-in-out rounded-md"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="size-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 2V22H4V18H2V16H4V13H2V11H4V8H2V6H4V2H8ZM20.0049 2C21.1068 2 22 2.89821 22 3.9908V20.0092C22 21.1087 21.1074 22 20.0049 22H10V2H20.0049Z"></path>
+              </svg>
+              From Template
+            </button>
+          </div>
+          
           <div className="mt-5">
             <ul className="flex flex-col text-sm gap-2 text-gray-500">
               {navItems.map((item) => (
